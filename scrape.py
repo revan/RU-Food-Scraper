@@ -2,6 +2,9 @@
 from bs4 import BeautifulSoup
 import re
 import urllib2
+import sys
+
+outfile = sys.argv[0]
 
 def scrapeNutritionReport(url):
 	"""Scrapes a Nutrition Report page, returns name, serving, calories, ingredients"""
@@ -62,6 +65,6 @@ def scrape():
 	#where's number two?
 	return ret
 
-output = open('/var/www/nutrition/nutrition.json', 'w')
+output = open(outfile, 'w')
 output.write(str(scrape()))
 output.close()
