@@ -2,6 +2,7 @@
 from bs4 import BeautifulSoup
 import re
 import urllib2
+import json
 import sys
 
 outfile = sys.argv[1]
@@ -66,5 +67,5 @@ def scrape():
 	return ret
 
 output = open(outfile, 'w')
-output.write(str(scrape()))
+json.dump(scrape(), output, indent=1)
 output.close()
