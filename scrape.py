@@ -4,7 +4,7 @@ import re
 import urllib2
 import sys
 
-outfile = sys.argv[0]
+outfile = sys.argv[1]
 
 def scrapeNutritionReport(url):
 	"""Scrapes a Nutrition Report page, returns name, serving, calories, ingredients"""
