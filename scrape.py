@@ -4,7 +4,9 @@ import re
 import urllib2
 import json
 import sys
+import csv
 
+ingredientSplit = re.compile(r'(?:[^,(]|\([^)]*\))+')
 URL_PREFIX = "http://menuportal.dining.rutgers.edu/foodpro/"
 outfile = sys.argv[1]
 
@@ -37,7 +39,7 @@ def scrapeNutritionReport(url):
 		e = soup.find(text=re.compile("INGREDIENTS")).parent
 		p = e.parent
 		e.decompose()
-		ret['ingredients'] = p.string
+		ret['ingredients'] = [ing.strip() for ing in ingredientSplit.findall(p.string)]
 	except AttributeError:
 		pass
 
