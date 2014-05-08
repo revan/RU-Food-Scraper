@@ -4,7 +4,6 @@ import re
 import urllib2
 import json
 import sys
-import csv
 
 ingredientSplit = re.compile(r'(?:[^,(]|\([^)]*\))+')
 URL_PREFIX = "http://menuportal.dining.rutgers.edu/foodpro/"
@@ -47,33 +46,25 @@ def scrapeNutritionReport(url):
 
 def scrapeMeal(url):
 	"""Parses meal, calls for scraping of each nutrition facts"""
-	ret = []
 	page = urllib2.urlopen(url).read()
 	soup = BeautifulSoup(page)
 	soup.prettify()
-	for link in soup.find("div", "menuBox").find_all("a", href=True):
-		ret.append(scrapeNutritionReport(URL_PREFIX+link['href']))
-	return ret
+	return [scrapeNutritionReport(URL_PREFIX + link['href']) for link in
+	        soup.find("div", "menuBox").find_all("a", href=True)]
 
 def scrapeCampus(url):
 	"""Calls for the scraping of the meals of a campus"""
-	ret = {}
-	ret['Breakfast'] = scrapeMeal(url+"&mealName=Breakfast")
-	ret['Lunch'] = scrapeMeal(url+"&mealName=Lunch")
-	ret['Dinner'] = scrapeMeal(url+"&mealName=Dinner")
-	#ret['']=scrapeMeal(url+"&mealName=") #takeout
-	return ret
+	# TODO: Add takeout?
+	meals = ('Breakfast', 'Lunch', 'Dinner')
+	return {meal: scrapeMeal(url + "&mealName=" + meal) for meal in meals}
 
 def scrape():
 	"""Calls for the scraping of the menus of each campus"""
 	prefix = URL_PREFIX + "pickmenu.asp?locationNum=0"
-	ret = {}
-	ret['Brower Commons'] = scrapeCampus(prefix + str(1))
-	ret['Busch Dining Hall'] = scrapeCampus(prefix + str(4))
-	ret['Neilson Dining Hall'] = scrapeCampus(prefix + str(5))
-	ret['Livingston Dining Commons'] = scrapeCampus(prefix + str(3))
-	#where's number two?
-	return ret
+	# There doesn't seem to be a hall #2
+	halls = (('Brower Commons', '1'), ('Livingston Dining Commons', '3'),
+	         ('Busch Dining Hall', '4'), ('Neilson Dining Hall', '5'))
+	return {hall[0]: scrapeCampus(prefix + hall[1]) for hall in halls}
 
 output = open(outfile, 'w')
 json.dump(scrape(), output, indent=1)
