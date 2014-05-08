@@ -1,24 +1,27 @@
-#!/bin/python2
+#!/bin/python
 from bs4 import BeautifulSoup
-import re
-import urllib2
+from re import compile
+try:
+	from urllib2 import urlopen
+except:
+	from urllib.request import urlopen
 import json
-import sys
+from sys import stdout
 from argparse import ArgumentParser, FileType
 
 parser = ArgumentParser(prog='RU Food Scraper', description='Scrape the Rutgers' +
                         'Dining Website for nutritional information\n' +
                         'Prints output as json.')
-parser.add_argument('outfile', nargs='?', type=FileType('w'), default=sys.stdout,
+parser.add_argument('outfile', nargs='?', type=FileType('w'), default=stdout,
                     help="Output file (defaults to stdout).")
 args = parser.parse_args()
 
-ingredientSplit = re.compile(r'(?:[^,(]|\([^)]*\))+')
+ingredientSplit = compile(r'(?:[^,(]|\([^)]*\))+')
 URL_PREFIX = "http://menuportal.dining.rutgers.edu/foodpro/"
 
 def scrapeNutritionReport(url):
 	"""Scrapes a Nutrition Report page, returns name, serving, calories, ingredients"""
-	page = urllib2.urlopen(url).read()
+	page = urlopen(url).read()
 	soup = BeautifulSoup(page)
 	ret = {}
 
@@ -42,7 +45,7 @@ def scrapeNutritionReport(url):
 
 	# Get ingredient list
 	try:
-		e = soup.find(text=re.compile("INGREDIENTS")).parent
+		e = soup.find(text=compile("INGREDIENTS")).parent
 		p = e.parent
 		e.decompose()
 		ret['ingredients'] = [ing.strip() for ing in ingredientSplit.findall(p.string)]
@@ -53,7 +56,7 @@ def scrapeNutritionReport(url):
 
 def scrapeMeal(url):
 	"""Parses meal, calls for scraping of each nutrition facts"""
-	page = urllib2.urlopen(url).read()
+	page = urlopen(url).read()
 	soup = BeautifulSoup(page)
 	soup.prettify()
 	return [scrapeNutritionReport(URL_PREFIX + link['href']) for link in
