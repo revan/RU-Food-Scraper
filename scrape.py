@@ -5,6 +5,7 @@ import urllib2
 import json
 import sys
 
+URL_PREFIX = "http://menuportal.dining.rutgers.edu/foodpro/"
 outfile = sys.argv[1]
 
 def scrapeNutritionReport(url):
@@ -12,24 +13,31 @@ def scrapeNutritionReport(url):
 	page = urllib2.urlopen(url).read()
 	soup = BeautifulSoup(page)
 	ret = {}
+
+	# Get item name
 	try:
-		ret['name'] = soup.find(id="content-text").find_all("h2")[1].string #name
-	except AttributeError:
-		pass
-	try:
-		ret['serving'] = soup.find(id="facts").find("p", "").string[len("Serving Size "):] #serving size
-	except AttributeError:
-		pass
-	try:
-		ret['calories'] = int(soup.find(id="facts").find("p", "strong").string[len("Calories "):]) #calories
+		ret['name'] = soup.find(id="content-text").find_all("h2")[1].string
 	except AttributeError:
 		pass
 
+	# Get serving size
+	try:
+		ret['serving'] = soup.find(id="facts").find("p", "").string[len("Serving Size "):]
+	except AttributeError:
+		pass
+
+	# Get calorie count.
+	try:
+		ret['calories'] = int(soup.find(id="facts").find("p", "strong").string[len("Calories "):])
+	except AttributeError:
+		pass
+
+	# Get ingredient list
 	try:
 		e = soup.find(text=re.compile("INGREDIENTS")).parent
 		p = e.parent
 		e.decompose()
-		ret['ingredients'] = p.string #ingredients
+		ret['ingredients'] = p.string
 	except AttributeError:
 		pass
 
@@ -38,26 +46,25 @@ def scrapeNutritionReport(url):
 def scrapeMeal(url):
 	"""Parses meal, calls for scraping of each nutrition facts"""
 	ret = []
-	prefix="http://menuportal.dining.rutgers.edu/foodpro/"
 	page = urllib2.urlopen(url).read()
 	soup = BeautifulSoup(page)
 	soup.prettify()
 	for link in soup.find("div", "menuBox").find_all("a", href=True):
-		ret.append(scrapeNutritionReport(prefix+link['href']))
+		ret.append(scrapeNutritionReport(URL_PREFIX+link['href']))
 	return ret
 
 def scrapeCampus(url):
 	"""Calls for the scraping of the meals of a campus"""
 	ret = {}
-	ret['Breakfast']=scrapeMeal(url+"&mealName=Breakfast")
-	ret['Lunch']=scrapeMeal(url+"&mealName=Lunch")
-	ret['Dinner']=scrapeMeal(url+"&mealName=Dinner")
+	ret['Breakfast'] = scrapeMeal(url+"&mealName=Breakfast")
+	ret['Lunch'] = scrapeMeal(url+"&mealName=Lunch")
+	ret['Dinner'] = scrapeMeal(url+"&mealName=Dinner")
 	#ret['']=scrapeMeal(url+"&mealName=") #takeout
 	return ret
 
 def scrape():
 	"""Calls for the scraping of the menus of each campus"""
-	prefix = "http://menuportal.dining.rutgers.edu/foodpro/pickmenu.asp?locationNum=0"
+	prefix = URL_PREFIX + "pickmenu.asp?locationNum=0"
 	ret = {}
 	ret['Brower Commons'] = scrapeCampus(prefix + str(1))
 	ret['Busch Dining Hall'] = scrapeCampus(prefix + str(4))
