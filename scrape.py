@@ -14,6 +14,7 @@ parser = ArgumentParser(prog='RU Food Scraper', description='Scrape the Rutgers'
                         'Prints output as json.')
 parser.add_argument('outfile', nargs='?', type=FileType('w'), default=stdout,
                     help="Output file (defaults to stdout).")
+parser.add_argument('--fancy', dest='fancy', action='store_true', default=False)
 args = parser.parse_args()
 
 ingredientSplit = compile(r'(?:[^,(]|\([^)]*\))+')
@@ -76,5 +77,8 @@ def scrape():
 	         ('Busch Dining Hall', '4'), ('Neilson Dining Hall', '5'))
 	return {hall[0]: scrapeCampus(prefix + hall[1]) for hall in halls}
 
-json.dump(scrape(), args.outfile, indent=1)
+if args.fancy:
+	json.dump(scrape(), args.outfile, indent=1)
+else:
+	json.dump(scrape(), args.outfile)
 args.outfile.close()
