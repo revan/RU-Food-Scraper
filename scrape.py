@@ -4,10 +4,17 @@ import re
 import urllib2
 import json
 import sys
+from argparse import ArgumentParser, FileType
+
+parser = ArgumentParser(prog='RU Food Scraper', description='Scrape the Rutgers' +
+                        'Dining Website for nutritional information\n' +
+                        'Prints output as json.')
+parser.add_argument('outfile', nargs='?', type=FileType('w'), default=sys.stdout,
+                    help="Output file (defaults to stdout).")
+args = parser.parse_args()
 
 ingredientSplit = re.compile(r'(?:[^,(]|\([^)]*\))+')
 URL_PREFIX = "http://menuportal.dining.rutgers.edu/foodpro/"
-outfile = sys.argv[1]
 
 def scrapeNutritionReport(url):
 	"""Scrapes a Nutrition Report page, returns name, serving, calories, ingredients"""
@@ -66,6 +73,5 @@ def scrape():
 	         ('Busch Dining Hall', '4'), ('Neilson Dining Hall', '5'))
 	return {hall[0]: scrapeCampus(prefix + hall[1]) for hall in halls}
 
-output = open(outfile, 'w')
-json.dump(scrape(), output, indent=1)
-output.close()
+json.dump(scrape(), args.outfile, indent=1)
+args.outfile.close()
