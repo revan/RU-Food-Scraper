@@ -1,35 +1,55 @@
-#!/bin/python2
+#!/bin/python
 from bs4 import BeautifulSoup
-import re
-import urllib2
+from re import compile
+try:
+	from urllib2 import urlopen
+except:
+	from urllib.request import urlopen
 import json
-import sys
+from sys import stdout
+from argparse import ArgumentParser, FileType
 
-outfile = sys.argv[1]
+parser = ArgumentParser(prog='RU Food Scraper', description='Scrape the Rutgers' +
+                        'Dining Website for nutritional information\n' +
+                        'Prints output as json.')
+parser.add_argument('outfile', nargs='?', type=FileType('w'), default=stdout,
+                    help="Output file (defaults to stdout).")
+parser.add_argument('--fancy', dest='fancy', action='store_true', default=False)
+args = parser.parse_args()
+
+ingredientSplit = compile(r'(?:[^,(]|\([^)]*\))+')
+URL_PREFIX = "http://menuportal.dining.rutgers.edu/foodpro/"
 
 def scrapeNutritionReport(url):
 	"""Scrapes a Nutrition Report page, returns name, serving, calories, ingredients"""
-	page = urllib2.urlopen(url).read()
+	page = urlopen(url).read()
 	soup = BeautifulSoup(page)
 	ret = {}
+
+	# Get item name
 	try:
-		ret['name'] = soup.find(id="content-text").find_all("h2")[1].string #name
-	except AttributeError:
-		pass
-	try:
-		ret['serving'] = soup.find(id="facts").find("p", "").string[len("Serving Size "):] #serving size
-	except AttributeError:
-		pass
-	try:
-		ret['calories'] = int(soup.find(id="facts").find("p", "strong").string[len("Calories "):]) #calories
+		ret['name'] = soup.find(id="content-text").find_all("h2")[1].string
 	except AttributeError:
 		pass
 
+	# Get serving size
 	try:
-		e = soup.find(text=re.compile("INGREDIENTS")).parent
+		ret['serving'] = soup.find(id="facts").find("p", "").string[len("Serving Size "):]
+	except AttributeError:
+		pass
+
+	# Get calorie count.
+	try:
+		ret['calories'] = int(soup.find(id="facts").find("p", "strong").string[len("Calories "):])
+	except AttributeError:
+		pass
+
+	# Get ingredient list
+	try:
+		e = soup.find(text=compile("INGREDIENTS")).parent
 		p = e.parent
 		e.decompose()
-		ret['ingredients'] = p.string #ingredients
+		ret['ingredients'] = [ing.strip() for ing in ingredientSplit.findall(p.string)]
 	except AttributeError:
 		pass
 
@@ -37,35 +57,28 @@ def scrapeNutritionReport(url):
 
 def scrapeMeal(url):
 	"""Parses meal, calls for scraping of each nutrition facts"""
-	ret = []
-	prefix="http://menuportal.dining.rutgers.edu/foodpro/"
-	page = urllib2.urlopen(url).read()
+	page = urlopen(url).read()
 	soup = BeautifulSoup(page)
 	soup.prettify()
-	for link in soup.find("div", "menuBox").find_all("a", href=True):
-		ret.append(scrapeNutritionReport(prefix+link['href']))
-	return ret
+	return [scrapeNutritionReport(URL_PREFIX + link['href']) for link in
+	        soup.find("div", "menuBox").find_all("a", href=True)]
 
 def scrapeCampus(url):
 	"""Calls for the scraping of the meals of a campus"""
-	ret = {}
-	ret['Breakfast']=scrapeMeal(url+"&mealName=Breakfast")
-	ret['Lunch']=scrapeMeal(url+"&mealName=Lunch")
-	ret['Dinner']=scrapeMeal(url+"&mealName=Dinner")
-	#ret['']=scrapeMeal(url+"&mealName=") #takeout
-	return ret
+	# TODO: Add takeout?
+	meals = ('Breakfast', 'Lunch', 'Dinner')
+	return {meal: scrapeMeal(url + "&mealName=" + meal) for meal in meals}
 
 def scrape():
 	"""Calls for the scraping of the menus of each campus"""
-	prefix = "http://menuportal.dining.rutgers.edu/foodpro/pickmenu.asp?locationNum=0"
-	ret = {}
-	ret['Brower Commons'] = scrapeCampus(prefix + str(1))
-	ret['Busch Dining Hall'] = scrapeCampus(prefix + str(4))
-	ret['Neilson Dining Hall'] = scrapeCampus(prefix + str(5))
-	ret['Livingston Dining Commons'] = scrapeCampus(prefix + str(3))
-	#where's number two?
-	return ret
+	prefix = URL_PREFIX + "pickmenu.asp?locationNum=0"
+	# There doesn't seem to be a hall #2
+	halls = (('Brower Commons', '1'), ('Livingston Dining Commons', '3'),
+	         ('Busch Dining Hall', '4'), ('Neilson Dining Hall', '5'))
+	return {hall[0]: scrapeCampus(prefix + hall[1]) for hall in halls}
 
-output = open(outfile, 'w')
-json.dump(scrape(), output, indent=1)
-output.close()
+if args.fancy:
+	json.dump(scrape(), args.outfile, indent=1)
+else:
+	json.dump(scrape(), args.outfile)
+args.outfile.close()
