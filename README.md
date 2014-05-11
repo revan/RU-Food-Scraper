@@ -2,37 +2,45 @@
 
 Scrapes food.rutgers.edu for menus and nutritional information, saves to file.
 
+Official website reports wonky numbers, so only scraping calories, serving size, and ingredients for now.
+
 ###Format
 
 ```
 {
-	Brower Commons : {
-		Breakfast : [
-			{
-				name : 'ITEM NAME',
-				serving : 'SERVING SIZE',
-				calories : 100,
-				ingredients : 'INGREDIENT1, INGREDIENT2, ...'
-			},
-			{
+	'Brower Commons' : {
+		'Breakfast' : {
+			'CATEGORY' : [
+				{
+					'name' : 'ITEM NAME',
+					'serving' : 'SERVING SIZE',
+					'calories' : 100,
+					'ingredients' : [
+						'INGREDIENT1',
+						'INGREDIENT2',
+						...
+					]
+				},
+				{
+					...
+				},
 				...
-			},
+			]
+		},
+		'Lunch' : {
 			...
-		],
-		Lunch : [
+		},
+		'Dinner' : {
 			...
-		],
-		Dinner : [
-			...
-		]
+		}
 	},
-	Busch Dining Hall : {
+	'Busch Dining Hall' : {
 		...
 	},
-	Neilson Dining Hall : {
+	'Neilson Dining Hall' : {
 		...
 	},
-	Livingston Dining Commons : {
+	'Livingston Dining Commons' : {
 		...
 	}
 }

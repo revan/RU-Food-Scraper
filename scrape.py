@@ -46,11 +46,16 @@ def scrapeNutritionReport(url):
 
 def scrapeMeal(url):
 	"""Parses meal, calls for scraping of each nutrition facts"""
+	ret={}
 	page = urlopen(url).read()
 	soup = BeautifulSoup(page)
 	soup.prettify()
-	return [scrapeNutritionReport(URL_PREFIX + link['href']) for link in
-	        soup.find("div", "menuBox").find_all("a", href=True)]
+	for link in soup.find("div", "menuBox").find_all("a", href=True):
+		category = link.find_previous("p", style="margin: 3px 0;").string[3:-3]
+		if not ret.get(category):
+			ret[category]=[]
+		ret[category].append(scrapeNutritionReport(URL_PREFIX+link['href']))
+	return ret
 
 def scrapeCampus(url):
 	"""Calls for the scraping of the meals of a campus"""
