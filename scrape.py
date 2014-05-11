@@ -44,7 +44,7 @@ def scrapeNutritionReport(url):
 
 	return ret
 
-def scrapeMeal(url):
+def scrapeMeal(url, dicts=0):
 	"""Parses meal, calls for scraping of each nutrition facts"""
 	ret={}
 	page = urlopen(url).read()
@@ -55,21 +55,38 @@ def scrapeMeal(url):
 		if not ret.get(category):
 			ret[category]=[]
 		ret[category].append(scrapeNutritionReport(URL_PREFIX+link['href']))
-	return ret
+	if dicts:
+		return ret
+	else:
+		return [{
+			"genre_name" : category,
+			"items" : ret[category]
+		} for category in ret.keys()]
 
-def scrapeCampus(url):
+def scrapeCampus(url, dicts=0):
 	"""Calls for the scraping of the meals of a campus"""
-	# TODO: Add takeout?
 	meals = ('Breakfast', 'Lunch', 'Dinner', 'Knight Room')
-	return {meal: scrapeMeal(url + "&mealName=" + meal.replace(' ', '+')) for meal in meals}
+	if dicts:
+		return {meal: scrapeMeal(url + "&mealName=" + meal.replace(' ', '+')) for meal in meals}
+	else:
+		return [{
+			"meal_name" : meal,
+			"genres" : scrapeMeal(url + "&mealName=" + meal.replace(' ', '+'), dicts=0)
+		} for meal in meals]
 
-def scrape():
+def scrape(dicts=0):
 	"""Calls for the scraping of the menus of each campus"""
 	prefix = URL_PREFIX + "pickmenu.asp?locationNum=0"
 	# There doesn't seem to be a hall #2
 	halls = (('Brower Commons', '1'), ('Livingston Dining Commons', '3'),
 	         ('Busch Dining Hall', '4'), ('Neilson Dining Hall', '5'))
-	return {hall[0]: scrapeCampus(prefix + hall[1]) for hall in halls}
+	if dicts:
+		return {hall[0]: scrapeCampus(prefix + hall[1]) for hall in halls}
+	else:
+		return [{
+			"location_name" : hall[0],
+			"meals" : scrapeCampus(prefix + hall[1], dicts=0)
+		} for hall in halls]
 
 if __name__=="__main__":
 	import json
@@ -81,10 +98,9 @@ if __name__=="__main__":
 	parser.add_argument('outfile', nargs='?', type=FileType('w'), default=stdout,
 	                    help="Output file (defaults to stdout).")
 	parser.add_argument('--fancy', dest='fancy', action='store_true', default=False)
+	parser.add_argument('--dicts', dest='dicts', action='store_true', default=False)
 	args = parser.parse_args()
 
-	if args.fancy:
-		json.dump(scrape(), args.outfile, indent=1)
-	else:
-		json.dump(scrape(), args.outfile)
+	json.dump(scrape(dicts=args.dicts), args.outfile, indent=(1 if args.fancy else None))
+	
 	args.outfile.close()
