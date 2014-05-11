@@ -5,17 +5,6 @@ try:
 	from urllib2 import urlopen
 except:
 	from urllib.request import urlopen
-import json
-from sys import stdout
-from argparse import ArgumentParser, FileType
-
-parser = ArgumentParser(prog='RU Food Scraper', description='Scrape the Rutgers' +
-                        'Dining Website for nutritional information\n' +
-                        'Prints output as json.')
-parser.add_argument('outfile', nargs='?', type=FileType('w'), default=stdout,
-                    help="Output file (defaults to stdout).")
-parser.add_argument('--fancy', dest='fancy', action='store_true', default=False)
-args = parser.parse_args()
 
 ingredientSplit = compile(r'(?:[^,(]|\([^)]*\))+')
 URL_PREFIX = "http://menuportal.dining.rutgers.edu/foodpro/"
@@ -77,8 +66,20 @@ def scrape():
 	         ('Busch Dining Hall', '4'), ('Neilson Dining Hall', '5'))
 	return {hall[0]: scrapeCampus(prefix + hall[1]) for hall in halls}
 
-if args.fancy:
-	json.dump(scrape(), args.outfile, indent=1)
-else:
-	json.dump(scrape(), args.outfile)
-args.outfile.close()
+if __name__=="__main__":
+	import json
+	from sys import stdout
+	from argparse import ArgumentParser, FileType
+	parser = ArgumentParser(prog='RU Food Scraper', description='Scrape the Rutgers' +
+                        'Dining Website for nutritional information\n' +
+                        'Prints output as json.')
+	parser.add_argument('outfile', nargs='?', type=FileType('w'), default=stdout,
+	                    help="Output file (defaults to stdout).")
+	parser.add_argument('--fancy', dest='fancy', action='store_true', default=False)
+	args = parser.parse_args()
+
+	if args.fancy:
+		json.dump(scrape(), args.outfile, indent=1)
+	else:
+		json.dump(scrape(), args.outfile)
+	args.outfile.close()
