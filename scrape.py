@@ -66,8 +66,8 @@ def scrapeMeal(url):
 def scrapeCampus(url):
 	"""Calls for the scraping of the meals of a campus"""
 	# TODO: Add takeout?
-	meals = ('Breakfast', 'Lunch', 'Dinner')
-	return {meal: scrapeMeal(url + "&mealName=" + meal) for meal in meals}
+	meals = ('Breakfast', 'Lunch', 'Dinner', 'Knight Room')
+	return {meal: scrapeMeal(url + "&mealName=" + meal.replace(' ', '+')) for meal in meals}
 
 def scrape():
 	"""Calls for the scraping of the menus of each campus"""
