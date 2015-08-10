@@ -1,4 +1,4 @@
-#!/bin/python
+#!/usr/bin/python3
 from bs4 import BeautifulSoup
 from re import compile
 try:
